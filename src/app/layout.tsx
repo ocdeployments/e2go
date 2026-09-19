@@ -2,40 +2,24 @@ import { runStartupSecurityChecks } from '@/lib/security-checks'
 runStartupSecurityChecks()
 
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import CookieBanner from "@/components/CookieBanner";
 import PageTransition from "@/components/ui/PageTransition";
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: "--font-cormorant",
-  display: "swap",
-  weight: ["300", "400", "500"],
-  style: ["normal", "italic"],
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  display: "swap",
-  weight: ["300", "400", "500"],
-});
 
 export const metadata: Metadata = {
   title: {
     default: "E2go.app — U.S. E-2 Treaty Investor Visa Preparation",
     template: "%s | E2go.app",
   },
-  description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
+  description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $990.",
   metadataBase: new URL("https://e2go.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "E2go.app",
     title: "E2go.app — U.S. E-2 Treaty Investor Visa Preparation",
-    description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $550.",
+    description: "Prepare your complete E-2 visa application package. All consulate tabs. 82 treaty countries. From $990.",
     images: [
       {
         url: "/og-image.png",
@@ -70,7 +54,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
+    <html lang="en">
+      <head>
+        <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body className="font-sans antialiased bg-[#0a0a0a] text-[#f5f0e8]">
         <a
           href="#main-content"

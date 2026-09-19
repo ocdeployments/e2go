@@ -1,5 +1,8 @@
 'use server'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import { VERIFIED_TOKEN_COOKIE, VERIFIED_TOKEN_MAX_AGE_SECONDS } from '@/lib/verified-token-cookie'
+
 
 export async function verifyToken(token: string) {
   const supabase = createClient(
@@ -25,9 +28,31 @@ export async function verifyToken(token: string) {
     .update({ verified_at: new Date().toISOString() })
     .eq('token', token)
 
+  cookies().set(VERIFIED_TOKEN_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: VERIFIED_TOKEN_MAX_AGE_SECONDS,
+  })
+
+  // email_verifications has no full_name column; quiz_sessions does. Fetch it
+  // here with the service role since anonymous clients have no SELECT policy
+  // on quiz_sessions (see comment in src/app/results/page.tsx EmailGate).
+  let fullName: string | null = null
+  if (data.quiz_session_id) {
+    const { data: session } = await supabase
+      .from('quiz_sessions')
+      .select('full_name')
+      .eq('id', data.quiz_session_id)
+      .maybeSingle()
+    fullName = session?.full_name || null
+  }
+
   return {
     valid: true,
     email: data.email,
+    full_name: fullName,
     outcome: data.outcome,
     result_json: data.result_json,
     quiz_session_id: data.quiz_session_id,

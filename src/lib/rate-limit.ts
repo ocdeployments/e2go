@@ -28,7 +28,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { captureApiError } from "./capture-error";
 
-export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results' | 'promo-validate' | 'early-access-submit' | 'auth';
+export type RateLimitProfile = 'faq' | 'evaluate' | 'coaching' | 'tts' | 'transcribe' | 'generate' | 'fdd' | 'fdd-analysis' | 'semantic-eval' | 'parse-doc' | 'notification' | 'gap-analysis-run' | 'resend-results' | 'promo-validate' | 'early-access-submit' | 'auth' | 'interview-prep' | 'brand-view' | 'support-submit';
 
 const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> = {
   faq:                { requests: 10,  window: '10 m' },
@@ -50,6 +50,12 @@ const PROFILES: Record<RateLimitProfile, { requests: number; window: string }> =
   'promo-validate':   { requests: 20,  window: '10 m' },
   'early-access-submit': { requests: 5, window: '60 m' },
   auth:                  { requests: 8, window: '10 m' },
+  // Paid LLM call per request; the client caches the brief, so a real user needs few.
+  'interview-prep':      { requests: 6, window: '60 m' },
+  // Anonymous analytics insert; a real visitor opens a handful of brand pages.
+  'brand-view':          { requests: 30, window: '10 m' },
+  // Public form that inserts a row and emails the admin; a real user files a couple.
+  'support-submit':      { requests: 5, window: '60 m' },
 };
 
 const limiters = new Map<RateLimitProfile, Ratelimit>();

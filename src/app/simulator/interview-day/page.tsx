@@ -94,7 +94,7 @@ export default function InterviewDayPage() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const coachingNotes = latestSession?.coaching_notes as { top3NextSession?: string[] } | null;
       if (coachingNotes?.top3NextSession?.length) {
@@ -106,18 +106,14 @@ export default function InterviewDayPage() {
         id: string;
         application_type: string | null;
         treaty_country: string | null;
-        investment_sources: unknown;
-        prior_visa_denial: boolean | null;
         operational_status: string | null;
         business_category: string | null;
-        has_partner: boolean | null;
-      }>(supabase, user.id, 'id, application_type, treaty_country, investment_sources, prior_visa_denial, operational_status, business_category, has_partner');
+      }>(supabase, user.id, 'id, application_type, treaty_country, operational_status, business_category');
 
       // Fetch answers for spouse/children flags
       let hasSpouse = false;
       let childCount = 0;
       let isFranchise = false;
-      const investmentSourceTypes: string[] = [];
 
       if (app) {
         const { data: answers, error: answersError } = await supabase
@@ -140,19 +136,6 @@ export default function InterviewDayPage() {
         const childAnswer = answerMap.get('Q0-03') || '';
         childCount = childAnswer.match(/(\d+)\s*child/i)?.[1] ? parseInt(childAnswer.match(/(\d+)\s*child/i)![1]) : 0;
         isFranchise = (app.business_category || '').toLowerCase().includes('franchise') || !!(answerMap.get('QF-NEW-05'));
-
-        // Parse investment sources
-        if (app.investment_sources) {
-          const sources = typeof app.investment_sources === 'string'
-            ? JSON.parse(app.investment_sources)
-            : app.investment_sources;
-          if (Array.isArray(sources)) {
-            sources.forEach((s: { sourceType?: string; source_type?: string }) => {
-              const t = s.sourceType || s.source_type || '';
-              if (t) investmentSourceTypes.push(t);
-            });
-          }
-        }
       }
 
       const country = app?.treaty_country || null;
@@ -187,12 +170,14 @@ export default function InterviewDayPage() {
         hasSpouseApplying: hasSpouse,
         dependentChildCount: childCount,
         isFranchise,
-        investmentSources: investmentSourceTypes,
-        priorVisaDenial: app?.prior_visa_denial === true,
+        // applications has no investment_sources / prior_visa_denial columns in the
+        // live schema (asking for them nulled the whole row), so these stay empty.
+        investmentSources: [],
+        priorVisaDenial: false,
         operationalStatus: app?.operational_status || 'pre_start',
         businessCategory: app?.business_category || '',
         hasDocumentUploads,
-        hasPartner: app?.has_partner === true || (app?.application_type || '').includes('partnership'),
+        hasPartner: (app?.application_type || '').includes('partnership'),
       };
 
       setChecklist(buildDocumentChecklist(flags));

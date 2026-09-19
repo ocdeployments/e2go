@@ -33,6 +33,7 @@ import { companyFooterLine } from './company';
 import { EMAIL_SENDER, SUPPORT_REPLY_TO } from './senders';
 import { retentionHoldUrl } from './retention-hold-token';
 import { captureApiError } from '@/lib/capture-error';
+import { unsubscribeHeaders } from './unsubscribe';
 
 export interface RetentionEmailContent {
   subject: string;
@@ -112,6 +113,7 @@ export async function sendRetentionNoticeEmail(args: SendRetentionNoticeArgs): P
     .maybeSingle();
   if (suppressed) return false;
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const { subject, html, text } = buildRetentionNoticeEmail(purgeDate, email);
 
   if (!process.env.RESEND_API_KEY) {
@@ -126,6 +128,7 @@ export async function sendRetentionNoticeEmail(args: SendRetentionNoticeArgs): P
         subject,
         html,
         text,
+        headers: unsubscribeHeaders(email, appUrl),
       });
       if (resendError) {
         captureApiError(resendError, { route: 'emails/retention-notice', stage: 'resend-send', email, applicationId });
@@ -235,6 +238,7 @@ export async function sendRetentionReminderEmail(args: SendRetentionReminderArgs
         subject,
         html,
         text,
+        headers: unsubscribeHeaders(email, appUrl),
       });
       if (resendError) {
         captureApiError(resendError, { route: 'emails/retention-reminder', stage: 'resend-send', email, applicationId });
@@ -317,6 +321,7 @@ export async function sendRetentionCompletionEmail(args: SendRetentionCompletion
     .maybeSingle();
   if (suppressed) return false;
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const { subject, html, text } = buildRetentionCompletionEmail(purgedFileCount, email);
 
   if (!process.env.RESEND_API_KEY) {
@@ -331,6 +336,7 @@ export async function sendRetentionCompletionEmail(args: SendRetentionCompletion
         subject,
         html,
         text,
+        headers: unsubscribeHeaders(email, appUrl),
       });
       if (resendError) {
         captureApiError(resendError, { route: 'emails/retention-completion', stage: 'resend-send', email, applicationId });

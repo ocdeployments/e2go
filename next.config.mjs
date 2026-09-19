@@ -17,6 +17,16 @@ const nextConfig = {
       },
     ],
   },
+  // /modules and /score used to be server pages that called redirect(). Next
+  // prerenders those statically, and the prerendered response carries an empty
+  // Location header in production (F-014). Config redirects are answered before
+  // any page renders, so the Location is always set.
+  async redirects() {
+    return [
+      { source: '/modules', destination: '/pricing', permanent: false },
+      { source: '/score', destination: '/results', permanent: false },
+    ];
+  },
   async headers() {
     // Next.js Fast Refresh / HMR runtime relies on eval() in dev — 'unsafe-eval'
     // must stay in dev only. Stripping it in prod (S2, Session 100) is the

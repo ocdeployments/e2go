@@ -136,6 +136,23 @@ const DOC_QUALITY_CONFIG: Partial<Record<DocumentType, DocQualityConfig>> = {
 // Analysis engine (pure — no side effects)
 // ============================================================================
 
+const MISSING_ELEMENTS_PREFIX = 'Missing required elements:';
+
+// The generation engine records missing elements as snake_case keys
+// ("Missing required elements: employment_projections, market_analysis").
+// Show them as plain language instead of internal identifiers.
+function humanizeGateNote(note: string): string {
+  const trimmed = note.trim();
+  if (!trimmed.startsWith(MISSING_ELEMENTS_PREFIX)) return trimmed;
+  const elements = trimmed
+    .slice(MISSING_ELEMENTS_PREFIX.length)
+    .split(',')
+    .map((element) => element.trim().replace(/_/g, ' '))
+    .filter((element) => element.length > 0);
+  if (elements.length === 0) return trimmed;
+  return `This document does not yet cover: ${elements.join(', ')}.`;
+}
+
 function analyzeDocument(doc: GeneratedDocument): AuditFinding[] {
   const findings: AuditFinding[] = [];
   const text = doc.content_text ?? '';
@@ -144,8 +161,9 @@ function analyzeDocument(doc: GeneratedDocument): AuditFinding[] {
 
   // 1. Quality gate notes from the generation engine
   if (doc.quality_gate_notes && doc.quality_gate_notes.length > 0) {
-    for (const note of doc.quality_gate_notes) {
-      if (!note.trim()) continue;
+    for (const rawNote of doc.quality_gate_notes) {
+      if (!rawNote.trim()) continue;
+      const note = humanizeGateNote(rawNote);
       findings.push({
         severity: 'warning',
         code: 'QG-NOTE',

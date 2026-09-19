@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { EMAIL_SENDER, SUPPORT_REPLY_TO } from './senders';
 import { companyFooterLine } from './company';
+import { unsubscribeHeaders } from './unsubscribe';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -183,7 +184,8 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
       replyTo: SUPPORT_REPLY_TO,
       to: to,
       subject: subject,
-      html: html
+      html: html,
+      headers: unsubscribeHeaders(to, appUrl)
     });
     console.log(`[EMAIL] Sent to ${to}: ${subject}`);
     return true;

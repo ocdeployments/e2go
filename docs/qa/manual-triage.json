@@ -1,0 +1,1173 @@
+{
+ "journeys": [
+  {
+   "id": "J1",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J2",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J3",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J4",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J5",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J6",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J7",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J8",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J9",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J10",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J11",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  },
+  {
+   "id": "J12",
+   "verdict": "NOT_RUN",
+   "notes": "end-to-end journey not executed: the write-guard blocked all non-GET requests in this run"
+  }
+ ],
+ "staticChecks": [
+  {
+   "id": "tsc",
+   "verdict": "PASS",
+   "note": "npx tsc --noEmit on the scratch copy: exit 0"
+  },
+  {
+   "id": "jest",
+   "verdict": "PASS",
+   "note": "49 suites / 712 tests pass"
+  },
+  {
+   "id": "build",
+   "verdict": "PASS",
+   "note": "next build on the scratch copy OK (Sentry env blank, so tunnelRoute absent)"
+  },
+  {
+   "id": "lint",
+   "verdict": "WARN",
+   "note": "0 errors; 371 warnings vs baseline 359 (+12)"
+  },
+  {
+   "id": "schema-drift",
+   "verdict": "NOT_RUN",
+   "note": "not executed this run (needs the live DB; run per CLAUDE.md)"
+  },
+  {
+   "id": "route-inventory",
+   "verdict": "PASS",
+   "note": "110 pages / 127 route files / 149 handlers, as planned"
+  },
+  {
+   "id": "brand-casing",
+   "verdict": "NOT_RUN",
+   "note": "not executed as a grep sweep; browser probe brand check saw no violations on 236 pages"
+  },
+  {
+   "id": "dead-paths",
+   "verdict": "NOT_RUN",
+   "note": "not re-run"
+  },
+  {
+   "id": "secrets",
+   "verdict": "NOT_RUN",
+   "note": "not executed (trufflehog CI config noted separately)"
+  },
+  {
+   "id": "headers",
+   "verdict": "PASS",
+   "note": "L2-5: HSTS, nosniff, X-Frame-Options, referrer + permissions policy, CSP on /, /api/health, /pricing"
+  },
+  {
+   "id": "seo",
+   "verdict": "NOT_RUN",
+   "note": "not executed; homepage meta \"From $550\" disagrees with the $990 Foundation price (content finding)"
+  },
+  {
+   "id": "cron-guards",
+   "verdict": "PASS",
+   "note": "guard-order: all cron handlers check CRON_SECRET before any effect"
+  },
+  {
+   "id": "guard-order",
+   "verdict": "PASS",
+   "note": "0 true effect-before-guard after triage (4 analyzer false positives hand-verified)"
+  },
+  {
+   "id": "server-actions",
+   "verdict": "FAIL",
+   "note": "SA1 F-010 fails (see findings); SA2/SA3 reviewed"
+  }
+ ],
+ "apiStatic": [
+  {
+   "route": "/api/account/delete",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/account/export",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/account/restore",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/cost-summary",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (admin) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/flag-user",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/health-detail",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (admin) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/promo-codes",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order flagged enforced=false but hand-read: admin/signature check precedes effect (analyzer false positive)"
+  },
+  {
+   "route": "/api/admin/promo-codes",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order flagged enforced=false but hand-read: admin/signature check precedes effect (analyzer false positive)"
+  },
+  {
+   "route": "/api/admin/promo-codes/[id]",
+   "method": "PATCH",
+   "verdict": "PASS",
+   "note": "guard-order flagged enforced=false but hand-read: admin/signature check precedes effect (analyzer false positive)"
+  },
+  {
+   "route": "/api/admin/send-email",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/settings",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (admin) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/settings",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (admin) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/stuck-jobs",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (admin) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/admin/tier-override",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (admin) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/ai",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (llm); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/analysis/run",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/apply/parse-document",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/checkout/initiate",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/cron/data-retention",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/cron/generation-resume",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/cron/health-watchdog",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/cron/payment-reconciliation",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/cron/quiz-nurture",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (None); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/cron/rebuild-profiles",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/dashboard/certify-document",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/dashboard/request-regeneration",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/documents",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/documents/extract",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/email/resend-results",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "public by design; rate-limited before effect; paid LLM/mail behind the limiter"
+  },
+  {
+   "route": "/api/email/results",
+   "method": "POST",
+   "verdict": "FAIL",
+   "sev": "S2",
+   "note": "F-011: sends/uses the e-mail from the request body without proving ownership; rate limit only (3/60min)"
+  },
+  {
+   "route": "/api/email/schedule",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (None); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/email/schedule",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (cron) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/faq/ask",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "public by design; rate-limited before effect; paid LLM/mail behind the limiter"
+  },
+  {
+   "route": "/api/fdd/compare",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/extract",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/questions",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/report",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/report/pdf",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/score",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/territory",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/upload",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/fdd/writeback",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/followup/completion-summary",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/followup/generate-questions",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/followup/save-response",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/followup/save-voice-sample",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/gap-analysis/enrich",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (llm); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/gap-analysis/run",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/gap-analysis/semantic-eval",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/acknowledge",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/confirm",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/documents/[applicationId]",
+   "method": "PATCH",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/documents/[applicationId]",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/revise/[applicationId]",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/run/[jobId]",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/generate/start",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/market-analysis",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/market-analysis",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/market-analysis/pdf",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/market-analysis/pdf",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/notifications/franchise-referral",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (mail); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/nps/submit",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/partner/accept",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/partner/invite",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/quiz/personalized-flags",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "public by design; rate-limited before effect; paid LLM/mail behind the limiter"
+  },
+  {
+   "route": "/api/renewal/generate",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/coaching-report",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (llm); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/evaluate",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/follow-up",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (llm); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/interview-prep",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/prep-kit",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/prep-kit",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/prep-kit/pdf",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/quick-start",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/transcribe",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (None); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/simulator/tts",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (None); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/stripe/checkout",
+   "method": "GET",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (None) precedes first effect (None); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/stripe/checkout",
+   "method": "HEAD",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (None) precedes first effect (None); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/stripe/create-checkout",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/stripe/grant-simulator-sessions",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/stripe/verify-payment",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order static analysis: first guard (auth) precedes first effect (db); handler NOT read line-by-line"
+  },
+  {
+   "route": "/api/stripe/webhook",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "guard-order flagged enforced=false but hand-read: admin/signature check precedes effect (analyzer false positive)"
+  },
+  {
+   "route": "/api/support/submit",
+   "method": "POST",
+   "verdict": "PASS",
+   "note": "anonymous by design; no Turnstile/captcha found \u2014 abuse vector (S3, see F-012b)"
+  }
+ ],
+ "serverActions": [
+  {
+   "id": "SA1",
+   "verdict": "FAIL",
+   "sev": "S1",
+   "note": "createAccountFromVerifiedEmail: service-role createUser({email_confirm:true}) from a client-callable Server Action with a caller-supplied email; no server-side proof of the verification token. Anyone can create a pre-confirmed account for any e-mail (squatting / impersonation)."
+  },
+  {
+   "id": "SA2",
+   "verdict": "FAIL",
+   "sev": "S3",
+   "note": "verifyToken: public; no rate limit; returns email, full_name and result_json to any holder of a valid token (token is the secret, so acceptable) \u2014 but brute-force is unthrottled. Also marks verified_at on every call."
+  },
+  {
+   "id": "SA3",
+   "verdict": "FAIL",
+   "sev": "S3",
+   "note": "markTokenUsed: public state change keyed only by the token; not bound to an e-mail; no result check. Low impact (token = secret) \u2014 hardening only."
+  }
+ ],
+ "findings": [
+  {
+   "id": "F-000",
+   "sev": "S0",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "access",
+   "status": "fixed",
+   "title": "/admin/users/[userId]/view leaked a target user's e-mail and admin data to any signed-in non-admin",
+   "evidence": "Persona B and C fetched each other's data (service-role queries streamed into the 307 body). Fixed: requireAdmin() in the page; re-verified. UNCOMMITTED and NOT DEPLOYED.",
+   "fix": "src/app/admin/users/[userId]/view/page.tsx"
+  },
+  {
+   "id": "F-001",
+   "sev": "S2",
+   "dim": "design",
+   "cat": "Design",
+   "component": "none",
+   "title": "Brand fonts (Cormorant Garamond / DM Sans) do not resolve \u2014 text renders in a fallback face sitewide",
+   "evidence": "layout.tsx uses next/font (CSS vars) but ~99 files and globals.css:38 use the literal family names; no @font-face exists. Only machines with the fonts installed look right. See A-007..A-009. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-008",
+   "sev": "S2",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "none",
+   "title": "/api/franchise/brand-view: anonymous insert, no rate limit; malformed JSON returned 500",
+   "evidence": "anon POST -> 500. Malformed-JSON + unread insert error FIXED in source (uncommitted; not re-verified at runtime \u2014 scratch build predates it). Rate limit still absent. [Already scored via the automated findings/verdicts; component=none avoids double counting.]",
+   "status": "open"
+  },
+  {
+   "id": "F-009",
+   "sev": "S2",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "access",
+   "title": "State-changing or costly work behind GET routes",
+   "evidence": "download routes, GET /api/documents/[documentId], /api/case-profile/build, /api/franchise/matches, /api/renewal/intake, /api/market-analysis and the paid-LLM GET /api/simulator/interview-prep \u2014 prefetch/crawlers/CSRF-by-link can trigger writes or LLM spend."
+  },
+  {
+   "id": "F-010",
+   "sev": "S1",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "none",
+   "title": "Public Server Action creates pre-confirmed accounts for any e-mail (SA1)",
+   "evidence": "createAccountFromVerifiedEmail uses the service role with email_confirm:true and no server-side proof the caller owns the e-mail or holds a valid token. Fix before launch. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-011",
+   "sev": "S2",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "none",
+   "title": "/api/email/results trusts the e-mail in the request body",
+   "evidence": "Anyone can trigger a results e-mail to any address (3/60 min limit only); req.json() outside try (S4). [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-012",
+   "sev": "S3",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "access",
+   "title": "/api/support/submit is anonymous with no captcha/Turnstile",
+   "evidence": "spam / mail-abuse vector; rate-limit only."
+  },
+  {
+   "id": "F-013",
+   "sev": "S2",
+   "dim": "access",
+   "cat": "Access/Security",
+   "component": "pages",
+   "cells": [
+    "anon.desktop./renewal/documents",
+    "anon.desktop./renewal/intake"
+   ],
+   "title": "Middleware auth guard is dead for /franchise/* and /renewal/*",
+   "evidence": "AUTH_ROUTES lists them, but isExistingGatedPath() (middleware.ts:247) returns early for those paths, so anon gets HTTP 200 shells of /renewal/intake, /renewal/documents, /franchise/discover, /franchise/matches, /franchise/connect (curl-verified). Data APIs enforce auth themselves; the pages rely on client redirects."
+  },
+  {
+   "id": "F-014",
+   "sev": "S3",
+   "dim": "behaviour",
+   "cat": "Functional",
+   "component": "none",
+   "title": "/modules and /score are prerendered redirects with no Location header",
+   "evidence": "HTTP 307 with an empty Location for anon /modules and B /score; browsers land nowhere useful. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-015",
+   "sev": "S3",
+   "dim": "behaviour",
+   "cat": "Functional",
+   "component": "none",
+   "title": "GET /api/simulator/case-gaps always returns 500",
+   "evidence": "persona B with a valid applicationId -> 500 (A-006). [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-016",
+   "sev": "S3",
+   "dim": "behaviour",
+   "cat": "Functional",
+   "component": "none",
+   "title": "Client-loaded /apply/* pages show a blank or spinner-only screen for seconds; /apply/module3/e and /apply/upload probed as blank (textLen 31)",
+   "evidence": "A-003; no skeleton or loading copy. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-017",
+   "sev": "S3",
+   "dim": "content",
+   "cat": "Content/Copy",
+   "component": "none",
+   "title": "Raw field keys shown to users: \"Missing required elements: employment_projections, market_evidence, ...\"",
+   "evidence": "5 messages on /documents/[applicationId] (A-032..A-036). [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-018",
+   "sev": "S3",
+   "dim": "content",
+   "cat": "Content/Copy",
+   "component": "none",
+   "title": "\"TBD\" copy on /apply/calendar",
+   "evidence": "A-011; needs a content owner decision. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-019",
+   "sev": "S3",
+   "dim": "behaviour",
+   "cat": "Functional",
+   "component": "none",
+   "title": "Supabase REST calls from the browser answer 406/400 (quiz_sessions, simulator_sessions, applications)",
+   "evidence": "A-027..A-031; .single() on empty result and a column list the live schema rejects on /simulator/interview-day. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  },
+  {
+   "id": "F-020",
+   "sev": "S3",
+   "dim": "content",
+   "cat": "Content/Copy",
+   "component": "none",
+   "title": "/franchise/brand/<unknown-slug> renders 200 instead of a 404",
+   "evidence": "A-038: soft-404 with the generic Franchise Navigator title. [Already scored via the automated findings/verdicts; component=none avoids double counting.]"
+  }
+ ],
+ "dismissals": [
+  {
+   "rule": "R-CLICK-ERR",
+   "sig": "ERROR:Cannot read properties of undefined (reading 'member_type')",
+   "reason": "write-guard artifact: the harness returns {qa_blocked:true} to non-GET requests so the client read a missing field. Not a product defect."
+  },
+  {
+   "rule": "R-ERRSCREEN",
+   "routes": [
+    "/partner-access"
+   ],
+   "reason": "intentional no-token error state (source read)."
+  },
+  {
+   "rule": "GATE-NOTFOUND",
+   "routes": [
+    "/documents/debug-error"
+   ],
+   "reason": "Playwright-header-gated notFound(); S4 hygiene."
+  },
+  {
+   "rule": "R-LANDING",
+   "routes": [
+    "/apply/module2",
+    "/apply/module3/g",
+    "/apply/module3/h",
+    "/apply/module3/l",
+    "/apply/overview"
+   ],
+   "reason": "coded client redirects to the sibling section (source read); matrix expectation was stale. Not a defect."
+  },
+  {
+   "rule": "R-BLANK",
+   "reason": "probe captured the loading state of client-loaded pages (textLen 31); scored as S3 via F-016 (no skeleton / loading copy) instead of S1."
+  }
+ ],
+ "overrides": [
+  {
+   "cell": "B.desktop./admin/users/[userId]/view.idor",
+   "verdict": "PASS",
+   "reason": "S0 fixed in source (requireAdmin) and re-verified on a rebuilt server; original leak recorded as F-000"
+  },
+  {
+   "key": "B.desktop./admin/users/[userId]/view.idor",
+   "verdict": "PASS",
+   "reason": "S0 fixed in source (requireAdmin) and re-verified on a rebuilt server; original leak recorded as F-000"
+  },
+  {
+   "cell": "C.desktop./admin/users/[userId]/view.idor",
+   "verdict": "PASS",
+   "reason": "S0 fixed in source (requireAdmin) and re-verified on a rebuilt server; original leak recorded as F-000"
+  },
+  {
+   "key": "C.desktop./admin/users/[userId]/view.idor",
+   "verdict": "PASS",
+   "reason": "S0 fixed in source (requireAdmin) and re-verified on a rebuilt server; original leak recorded as F-000"
+  },
+  {
+   "cell": "anon.desktop./franchise",
+   "verdict": "PASS",
+   "reason": "public marketing catalogue; browser read shows brand content, no account data"
+  },
+  {
+   "key": "anon.desktop./franchise",
+   "verdict": "PASS",
+   "reason": "public marketing catalogue; browser read shows brand content, no account data"
+  },
+  {
+   "cell": "anon.desktop./franchise/brand/[slug]",
+   "verdict": "PASS",
+   "reason": "public marketing catalogue; browser read shows brand content, no account data"
+  },
+  {
+   "key": "anon.desktop./franchise/brand/[slug]",
+   "verdict": "PASS",
+   "reason": "public marketing catalogue; browser read shows brand content, no account data"
+  },
+  {
+   "cell": "anon.desktop./renewal/documents",
+   "verdict": "INCONCLUSIVE",
+   "reason": "shell renders with no account data for anon, but the middleware never guards it (F-013); the client gate was not observed to complete"
+  },
+  {
+   "key": "anon.desktop./renewal/documents",
+   "verdict": "INCONCLUSIVE",
+   "reason": "shell renders with no account data for anon, but the middleware never guards it (F-013); the client gate was not observed to complete"
+  },
+  {
+   "cell": "anon.desktop./renewal/intake",
+   "verdict": "INCONCLUSIVE",
+   "reason": "shell renders with no account data for anon, but the middleware never guards it (F-013); the client gate was not observed to complete"
+  },
+  {
+   "key": "anon.desktop./renewal/intake",
+   "verdict": "INCONCLUSIVE",
+   "reason": "shell renders with no account data for anon, but the middleware never guards it (F-013); the client gate was not observed to complete"
+  },
+  {
+   "cell": "B.desktop./documents/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./documents/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "C.desktop./documents/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "C.desktop./documents/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./generate/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./generate/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "C.desktop./generate/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "C.desktop./generate/[applicationId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./apply/dependent/[familyMemberId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./apply/dependent/[familyMemberId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "C.desktop./apply/dependent/[familyMemberId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "C.desktop./apply/dependent/[familyMemberId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./fdd/questions/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./fdd/questions/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./fdd/report/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./fdd/report/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./fdd/review/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./fdd/review/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./fdd/score/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./fdd/score/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./fdd/territory/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "key": "B.desktop./fdd/territory/[fddId].idor",
+   "verdict": "PASS",
+   "reason": "page shell carries no cross-user data; its data comes from /api/* routes whose IDOR cells all passed (13/13). Client-side page gate itself not observed."
+  },
+  {
+   "cell": "B.desktop./documents/debug-error",
+   "verdict": "PASS",
+   "reason": "Playwright-header-gated notFound() (S4 note); body-size difference is not a content leak"
+  },
+  {
+   "key": "B.desktop./documents/debug-error",
+   "verdict": "PASS",
+   "reason": "Playwright-header-gated notFound() (S4 note); body-size difference is not a content leak"
+  },
+  {
+   "cell": "API:GET /api/dashboard/change-impact#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "key": "API:GET /api/dashboard/change-impact#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "cell": "API:GET /api/dashboard/consistency-sweep#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "key": "API:GET /api/dashboard/consistency-sweep#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "cell": "API:GET /api/dashboard/outcome#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "key": "API:GET /api/dashboard/outcome#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "cell": "API:GET /api/dashboard/package-manifest#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "key": "API:GET /api/dashboard/package-manifest#auth-B",
+   "verdict": "INCONCLUSIVE",
+   "reason": "Bearer-token route; the cookie-only runner cannot authenticate it \u2014 needs a Bearer runner on re-run"
+  },
+  {
+   "cell": "API:POST /api/_sentry-tunnel#empty-json",
+   "verdict": "INCONCLUSIVE",
+   "reason": "tunnelRoute rewrite absent in the scratch build (Sentry env blank): unverifiable here"
+  },
+  {
+   "key": "API:POST /api/_sentry-tunnel#empty-json",
+   "verdict": "INCONCLUSIVE",
+   "reason": "tunnelRoute rewrite absent in the scratch build (Sentry env blank): unverifiable here"
+  },
+  {
+   "cell": "API:POST /api/_sentry-tunnel#no-body",
+   "verdict": "INCONCLUSIVE",
+   "reason": "tunnelRoute rewrite absent in the scratch build (Sentry env blank): unverifiable here"
+  },
+  {
+   "key": "API:POST /api/_sentry-tunnel#no-body",
+   "verdict": "INCONCLUSIVE",
+   "reason": "tunnelRoute rewrite absent in the scratch build (Sentry env blank): unverifiable here"
+  },
+  {
+   "cell": "B.desktop./apply/module2",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "key": "B.desktop./apply/module2",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "cell": "B.mobile./apply/module3/g",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "key": "B.mobile./apply/module3/g",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "cell": "B.mobile./apply/module3/h",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "key": "B.mobile./apply/module3/h",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "cell": "B.mobile./apply/module3/l",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "key": "B.mobile./apply/module3/l",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "cell": "B.mobile./apply/overview",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "key": "B.mobile./apply/overview",
+   "verdict": "PASS",
+   "reason": "client-side redirect to the sibling section is the coded behaviour (matrix expectation was stale); see A-002 note"
+  },
+  {
+   "cell": "anon.desktop./modules",
+   "verdict": "FAIL",
+   "sev": "S3",
+   "reason": "prerendered redirect with no Location header (F-014)"
+  },
+  {
+   "key": "anon.desktop./modules",
+   "verdict": "FAIL",
+   "sev": "S3",
+   "reason": "prerendered redirect with no Location header (F-014)"
+  },
+  {
+   "cell": "B.desktop./score",
+   "verdict": "FAIL",
+   "sev": "S3",
+   "reason": "prerendered redirect with no Location header (F-014)"
+  },
+  {
+   "key": "B.desktop./score",
+   "verdict": "FAIL",
+   "sev": "S3",
+   "reason": "prerendered redirect with no Location header (F-014)"
+  },
+  {
+   "key": "API:GET /api/simulator/case-gaps#auth-B",
+   "verdict": "FAIL",
+   "sev": "S2",
+   "reason": "valid request always returns 500 (F-015); feature API, no data exposure"
+  }
+ ],
+ "structuralGaps": [
+  "Persona A (real founder account with FDD data) skipped: FDD pages untested by an owner; no separate FDD, admin, unpaid, sim-only, soft-deleted or unverified persona",
+  "Write-guard blocked every non-GET request: forms, uploads, checkout, generation and all E2 flows were not exercised",
+  "Desktop clicks capped at 10 per page; mobile probe-only (no clicks)",
+  "Login-helper sessions expire after ~1h and do not refresh: real-browser session refresh unverified",
+  "Single browser engine; pane was hidden so LCP/CLS were unmeasurable",
+  "Scratch build shares Supabase and Upstash with production; Sentry, Resend, LLM keys blank",
+  "Static API verdicts rest on guard-order analysis, not a line-by-line handler read"
+ ],
+ "env": {
+  "gitSha": "51dea22 + uncommitted (admin view guard, brand-view)",
+  "harness": "Claude in-app browser pane, probe v5, write-guard on",
+  "build": "next start of a scratch copy, Next 14.2.35"
+ }
+}

@@ -1,0 +1,4044 @@
+{
+ "generated": "2026-09-19T06:40:04.948Z",
+ "counts": {
+  "validation-first": 8,
+  "guard-first": 135,
+  "no-effect": 3,
+  "no-guard": 3
+ },
+ "candidates": {
+  "getWrites": [
+   {
+    "route": "/api/admin/health-detail",
+    "method": "GET",
+    "writes": [
+     "llm"
+    ],
+    "via": []
+   },
+   {
+    "route": "/api/case-profile/build",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "buildCaseProfile (src/lib/case-profile.ts)"
+    ]
+   },
+   {
+    "route": "/api/cron/data-retention",
+    "method": "GET",
+    "writes": [
+     "db-write",
+     "storage-write",
+     "mail"
+    ],
+    "via": [
+     "purgeExpiredFiles (src/lib/retention-cron.ts)",
+     "sweepArchivedFiles (src/lib/retention-cron.ts)",
+     "sendRetentionReminders (src/lib/retention-cron.ts)",
+     "sendRetentionCompletions (src/lib/retention-cron.ts)"
+    ]
+   },
+   {
+    "route": "/api/cron/generation-resume",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "findStaleResumableJobs (src/lib/generation-resume.ts)",
+     "resumeStaleJob (src/lib/generation-resume.ts)"
+    ]
+   },
+   {
+    "route": "/api/cron/health-watchdog",
+    "method": "GET",
+    "writes": [
+     "db-write",
+     "mail",
+     "llm"
+    ],
+    "via": [
+     "sendResetAfterFailureEmail (src/lib/emails/generation-emails.ts)"
+    ]
+   },
+   {
+    "route": "/api/cron/payment-reconciliation",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": []
+   },
+   {
+    "route": "/api/cron/quiz-nurture",
+    "method": "GET",
+    "writes": [
+     "db-write",
+     "mail"
+    ],
+    "via": [
+     "processQuizNurture (src/lib/quiz-nurture-scheduler.ts)"
+    ]
+   },
+   {
+    "route": "/api/cron/rebuild-profiles",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "buildCaseProfile (src/lib/case-profile.ts)"
+    ]
+   },
+   {
+    "route": "/api/documents/[documentId]/download",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "logDocumentAccess (src/lib/document-access-log.ts)"
+    ]
+   },
+   {
+    "route": "/api/documents/[documentId]",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "logDocumentAccess (src/lib/document-access-log.ts)"
+    ]
+   },
+   {
+    "route": "/api/documents/gap-report",
+    "method": "GET",
+    "writes": [
+     "llm"
+    ],
+    "via": [
+     "generateGapReport (src/lib/document-extraction-engine.ts)"
+    ]
+   },
+   {
+    "route": "/api/email/schedule",
+    "method": "GET",
+    "writes": [
+     "db-write",
+     "mail"
+    ],
+    "via": [
+     "checkInactivityAndSendEmails (src/lib/email-scheduler.ts)"
+    ]
+   },
+   {
+    "route": "/api/franchise/matches",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "buildCaseProfile (src/lib/case-profile.ts)"
+    ]
+   },
+   {
+    "route": "/api/generate/download/[applicationId]",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": []
+   },
+   {
+    "route": "/api/generate/progress/[jobId]",
+    "method": "GET",
+    "writes": [
+     "llm"
+    ],
+    "via": [
+     "resolveProgressStatus (src/lib/progress-stall.ts)",
+     "isTerminalJobStatus (src/lib/progress-stall.ts)"
+    ]
+   },
+   {
+    "route": "/api/market-analysis",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": []
+   },
+   {
+    "route": "/api/renewal/intake",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": []
+   },
+   {
+    "route": "/api/simulator/case-gaps",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": [
+     "buildSimulatorContext (src/lib/simulator-engine.ts)"
+    ]
+   },
+   {
+    "route": "/api/simulator/interview-prep",
+    "method": "GET",
+    "writes": [
+     "llm",
+     "db-write"
+    ],
+    "via": [
+     "callLLM (src/lib/llm-client.ts)"
+    ]
+   },
+   {
+    "route": "/auth/callback",
+    "method": "GET",
+    "writes": [
+     "db-write"
+    ],
+    "via": []
+   },
+   {
+    "route": "/dev/email-preview/[template]",
+    "method": "GET",
+    "writes": [
+     "mail"
+    ],
+    "via": [
+     "buildPerspectiveEmail (src/lib/emails/quiz-nurture.ts)",
+     "buildPackageReadyEmail (src/lib/emails/generation-emails.ts)"
+    ]
+   }
+  ],
+  "guardNotEnforced": [
+   {
+    "route": "/api/admin/promo-codes/[id]",
+    "method": "PATCH",
+    "guard": "admin",
+    "file": "src/app/api/admin/promo-codes/[id]/route.ts:32"
+   },
+   {
+    "route": "/api/admin/promo-codes",
+    "method": "GET",
+    "guard": "admin",
+    "file": "src/app/api/admin/promo-codes/route.ts:35"
+   },
+   {
+    "route": "/api/admin/promo-codes",
+    "method": "POST",
+    "guard": "admin",
+    "file": "src/app/api/admin/promo-codes/route.ts:72"
+   },
+   {
+    "route": "/api/email/results",
+    "method": "POST",
+    "guard": "auth",
+    "file": "src/app/api/email/results/route.ts:8"
+   },
+   {
+    "route": "/api/stripe/webhook",
+    "method": "POST",
+    "guard": "webhook",
+    "file": "src/app/api/stripe/webhook/route.ts:32"
+   },
+   {
+    "route": "/api/support/submit",
+    "method": "POST",
+    "guard": "auth",
+    "file": "src/app/api/support/submit/route.ts:11"
+   }
+  ],
+  "importedBeforeGuard": []
+ },
+ "rows": [
+  {
+   "route": "/api/_sentry-tunnel",
+   "file": "src/app/api/_sentry-tunnel/route.ts",
+   "method": "POST",
+   "line": 19,
+   "verdict": "validation-first",
+   "firstGuard": null,
+   "firstEffect": "net",
+   "enforced": null,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/_sentry-tunnel/route.ts L26: missing DSN -> 400 before the upstream fetch"
+  },
+  {
+   "route": "/api/account/delete",
+   "file": "src/app/api/account/delete/route.ts",
+   "method": "POST",
+   "line": 19,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/account/export",
+   "file": "src/app/api/account/export/route.ts",
+   "method": "GET",
+   "line": 22,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/account/restore",
+   "file": "src/app/api/account/restore/route.ts",
+   "method": "POST",
+   "line": 15,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/cost-summary",
+   "file": "src/app/api/admin/cost-summary/route.ts",
+   "method": "GET",
+   "line": 29,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/flag-user",
+   "file": "src/app/api/admin/flag-user/route.ts",
+   "method": "POST",
+   "line": 16,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/health-detail",
+   "file": "src/app/api/admin/health-detail/route.ts",
+   "method": "GET",
+   "line": 47,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/promo-codes/[id]",
+   "file": "src/app/api/admin/promo-codes/[id]/route.ts",
+   "method": "PATCH",
+   "line": 32,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/promo-codes",
+   "file": "src/app/api/admin/promo-codes/route.ts",
+   "method": "GET",
+   "line": 35,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/promo-codes",
+   "file": "src/app/api/admin/promo-codes/route.ts",
+   "method": "POST",
+   "line": 72,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "normalizePromoCode",
+     "module": "src/lib/promo-codes.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/send-email",
+   "file": "src/app/api/admin/send-email/route.ts",
+   "method": "POST",
+   "line": 16,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/settings",
+   "file": "src/app/api/admin/settings/route.ts",
+   "method": "GET",
+   "line": 32,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/settings",
+   "file": "src/app/api/admin/settings/route.ts",
+   "method": "POST",
+   "line": 41,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/stuck-jobs",
+   "file": "src/app/api/admin/stuck-jobs/route.ts",
+   "method": "POST",
+   "line": 29,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/admin/tier-override",
+   "file": "src/app/api/admin/tier-override/route.ts",
+   "method": "POST",
+   "line": 29,
+   "verdict": "guard-first",
+   "firstGuard": "admin",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/ai",
+   "file": "src/app/api/ai/route.ts",
+   "method": "POST",
+   "line": 51,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "llm",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/analysis/run",
+   "file": "src/app/api/analysis/run/route.ts",
+   "method": "POST",
+   "line": 14,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "runAnalysisEngine",
+     "module": "src/lib/analysis-engine.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/answers",
+   "file": "src/app/api/answers/route.ts",
+   "method": "POST",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "buildCaseIntelligence",
+     "module": "src/lib/case-intelligence-core.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/applications/[applicationId]",
+   "file": "src/app/api/applications/[applicationId]/route.ts",
+   "method": "GET",
+   "line": 4,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/apply/parse-document",
+   "file": "src/app/api/apply/parse-document/route.ts",
+   "method": "POST",
+   "line": 1185,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm",
+    "storage-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    },
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "comprehendApplicationDocuments",
+     "module": "src/lib/document-comprehension-engine.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    },
+    {
+     "symbol": "buildCaseIntelligence",
+     "module": "src/lib/case-intelligence-core.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    },
+    {
+     "symbol": "seedFddAnalysisFromUpload",
+     "module": "src/lib/cic-fdd-seed.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write",
+      "storage-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/apply/section-completion",
+   "file": "src/app/api/apply/section-completion/route.ts",
+   "method": "GET",
+   "line": 34,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/auth/accept-terms",
+   "file": "src/app/api/auth/accept-terms/route.ts",
+   "method": "POST",
+   "line": 12,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/auth/login",
+   "file": "src/app/api/auth/login/route.ts",
+   "method": "POST",
+   "line": 28,
+   "verdict": "validation-first",
+   "firstGuard": "rate-limit",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/auth/login/route.ts L48-49: missing e-mail/password -> 400 before Turnstile and signInWithPassword"
+  },
+  {
+   "route": "/api/auth/set-session",
+   "file": "src/app/api/auth/set-session/route.ts",
+   "method": "POST",
+   "line": 16,
+   "verdict": "validation-first",
+   "firstGuard": null,
+   "firstEffect": null,
+   "enforced": null,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/auth/set-session/route.ts L18-21: missing tokens -> 400 before setSession"
+  },
+  {
+   "route": "/api/auth/signup",
+   "file": "src/app/api/auth/signup/route.ts",
+   "method": "POST",
+   "line": 34,
+   "verdict": "validation-first",
+   "firstGuard": "rate-limit",
+   "firstEffect": null,
+   "enforced": false,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/auth/signup/route.ts L47-49: missing name/e-mail/password -> 400 before Turnstile and signUp"
+  },
+  {
+   "route": "/api/case-file/field-quality",
+   "file": "src/app/api/case-file/field-quality/route.ts",
+   "method": "POST",
+   "line": 24,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "llm",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/case-profile/build",
+   "file": "src/app/api/case-profile/build/route.ts",
+   "method": "GET",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/case-profile/build",
+   "file": "src/app/api/case-profile/build/route.ts",
+   "method": "POST",
+   "line": 22,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/case/completion",
+   "file": "src/app/api/case/completion/route.ts",
+   "method": "GET",
+   "line": 115,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/checkout/initiate",
+   "file": "src/app/api/checkout/initiate/route.ts",
+   "method": "POST",
+   "line": 36,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isPackageTier",
+     "module": "src/lib/partnership-hold.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "resolvePartnershipHold",
+     "module": "src/lib/partnership-hold.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "validatePromoCode",
+     "module": "src/lib/promo-codes.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "reservePromoRedemption",
+     "module": "src/lib/promo-codes.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/coming-soon-interest",
+   "file": "src/app/api/coming-soon-interest/route.ts",
+   "method": "POST",
+   "line": 25,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "sendOpsAlert",
+     "module": "src/lib/ops-alert.ts",
+     "effects": [
+      "mail",
+      "net"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/consent/log",
+   "file": "src/app/api/consent/log/route.ts",
+   "method": "POST",
+   "line": 15,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/cron/data-retention",
+   "file": "src/app/api/cron/data-retention/route.ts",
+   "method": "GET",
+   "line": 226,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "storage-write",
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "purgeExpiredFiles",
+     "module": "src/lib/retention-cron.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "storage-write",
+      "mail"
+     ]
+    },
+    {
+     "symbol": "sweepArchivedFiles",
+     "module": "src/lib/retention-cron.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "storage-write",
+      "mail"
+     ]
+    },
+    {
+     "symbol": "sendRetentionReminders",
+     "module": "src/lib/retention-cron.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "storage-write",
+      "mail"
+     ]
+    },
+    {
+     "symbol": "sendRetentionCompletions",
+     "module": "src/lib/retention-cron.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "storage-write",
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/cron/generation-resume",
+   "file": "src/app/api/cron/generation-resume/route.ts",
+   "method": "GET",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "findStaleResumableJobs",
+     "module": "src/lib/generation-resume.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "resumeStaleJob",
+     "module": "src/lib/generation-resume.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/cron/health-watchdog",
+   "file": "src/app/api/cron/health-watchdog/route.ts",
+   "method": "GET",
+   "line": 60,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "sendResetAfterFailureEmail",
+     "module": "src/lib/emails/generation-emails.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/cron/payment-reconciliation",
+   "file": "src/app/api/cron/payment-reconciliation/route.ts",
+   "method": "GET",
+   "line": 63,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "reconcilePayments",
+     "module": "src/lib/payment-reconciliation.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/cron/quiz-nurture",
+   "file": "src/app/api/cron/quiz-nurture/route.ts",
+   "method": "GET",
+   "line": 12,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "processQuizNurture",
+     "module": "src/lib/quiz-nurture-scheduler.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/cron/rebuild-profiles",
+   "file": "src/app/api/cron/rebuild-profiles/route.ts",
+   "method": "GET",
+   "line": 15,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/case-profile",
+   "file": "src/app/api/dashboard/case-profile/route.ts",
+   "method": "GET",
+   "line": 139,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/certify-document",
+   "file": "src/app/api/dashboard/certify-document/route.ts",
+   "method": "POST",
+   "line": 30,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/change-impact",
+   "file": "src/app/api/dashboard/change-impact/route.ts",
+   "method": "GET",
+   "line": 18,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/change-impact",
+   "file": "src/app/api/dashboard/change-impact/route.ts",
+   "method": "DELETE",
+   "line": 59,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/consistency-sweep",
+   "file": "src/app/api/dashboard/consistency-sweep/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "runCanonicalConsistencySweep",
+     "module": "src/lib/cic-consistency-sweep.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/outcome",
+   "file": "src/app/api/dashboard/outcome/route.ts",
+   "method": "POST",
+   "line": 43,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/outcome",
+   "file": "src/app/api/dashboard/outcome/route.ts",
+   "method": "GET",
+   "line": 99,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/package-manifest",
+   "file": "src/app/api/dashboard/package-manifest/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "buildPackageManifest",
+     "module": "src/lib/cic-package-manifest.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/dashboard/request-regeneration",
+   "file": "src/app/api/dashboard/request-regeneration/route.ts",
+   "method": "POST",
+   "line": 28,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents/[documentId]/download",
+   "file": "src/app/api/documents/[documentId]/download/route.ts",
+   "method": "GET",
+   "line": 10,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents/[documentId]",
+   "file": "src/app/api/documents/[documentId]/route.ts",
+   "method": "GET",
+   "line": 7,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents/[documentId]",
+   "file": "src/app/api/documents/[documentId]/route.ts",
+   "method": "DELETE",
+   "line": 47,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "storage-write"
+   ],
+   "imported": [
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents/extract",
+   "file": "src/app/api/documents/extract/route.ts",
+   "method": "POST",
+   "line": 36,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "classifyDocument",
+     "module": "src/lib/document-extraction-engine.ts",
+     "effects": [
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "extractFields",
+     "module": "src/lib/document-extraction-engine.ts",
+     "effects": [
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "detectDiscrepancies",
+     "module": "src/lib/document-extraction-engine.ts",
+     "effects": [
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "generateGapReport",
+     "module": "src/lib/document-extraction-engine.ts",
+     "effects": [
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents/gap-report",
+   "file": "src/app/api/documents/gap-report/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "generateGapReport",
+     "module": "src/lib/document-extraction-engine.ts",
+     "effects": [
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents/resolve-discrepancy",
+   "file": "src/app/api/documents/resolve-discrepancy/route.ts",
+   "method": "POST",
+   "line": 7,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents",
+   "file": "src/app/api/documents/route.ts",
+   "method": "POST",
+   "line": 77,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "storage-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/documents",
+   "file": "src/app/api/documents/route.ts",
+   "method": "GET",
+   "line": 301,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/early-access",
+   "file": "src/app/api/early-access/route.ts",
+   "method": "OPTIONS",
+   "line": 45,
+   "verdict": "no-effect",
+   "firstGuard": null,
+   "firstEffect": null,
+   "enforced": null,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/early-access",
+   "file": "src/app/api/early-access/route.ts",
+   "method": "POST",
+   "line": 49,
+   "verdict": "validation-first",
+   "firstGuard": "rate-limit",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "sendEarlyAccessWelcomeEmail",
+     "module": "src/lib/emails/early-access-welcome.ts",
+     "effects": [
+      "mail"
+     ],
+     "writes": [
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/early-access/route.ts L65-96: invalid e-mail/name/country/timeline -> 400 before the upsert (L98) and the welcome e-mail"
+  },
+  {
+   "route": "/api/email/resend-results",
+   "file": "src/app/api/email/resend-results/route.ts",
+   "method": "POST",
+   "line": 37,
+   "verdict": "guard-first",
+   "firstGuard": "rate-limit",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "mail",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "sendResultsEmail",
+     "module": "src/lib/emails/results-email.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": true
+  },
+  {
+   "route": "/api/email/results",
+   "file": "src/app/api/email/results/route.ts",
+   "method": "POST",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "mail",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "sendResultsEmail",
+     "module": "src/lib/emails/results-email.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": true
+  },
+  {
+   "route": "/api/email/schedule",
+   "file": "src/app/api/email/schedule/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "checkInactivityAndSendEmails",
+     "module": "src/lib/email-scheduler.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/email/schedule",
+   "file": "src/app/api/email/schedule/route.ts",
+   "method": "POST",
+   "line": 27,
+   "verdict": "guard-first",
+   "firstGuard": "cron",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "checkInactivityAndSendEmails",
+     "module": "src/lib/email-scheduler.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "mail"
+     ]
+    },
+    {
+     "symbol": "processScheduledEmails",
+     "module": "src/lib/email-scheduler.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "db-write",
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/email/unsubscribe",
+   "file": "src/app/api/email/unsubscribe/route.ts",
+   "method": "POST",
+   "line": 15,
+   "verdict": "validation-first",
+   "firstGuard": null,
+   "firstEffect": "db",
+   "enforced": null,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "verifyUnsubscribeToken",
+     "module": "src/lib/emails/unsubscribe.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/email/unsubscribe/route.ts L28-32: forged/missing HMAC token -> 400 before the upsert"
+  },
+  {
+   "route": "/api/faq/ask",
+   "file": "src/app/api/faq/ask/route.ts",
+   "method": "POST",
+   "line": 270,
+   "verdict": "guard-first",
+   "firstGuard": "rate-limit",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/compare",
+   "file": "src/app/api/fdd/compare/route.ts",
+   "method": "POST",
+   "line": 14,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/extract",
+   "file": "src/app/api/fdd/extract/route.ts",
+   "method": "POST",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "extractFddText",
+     "module": "src/lib/fdd-extraction-engine.ts",
+     "effects": [
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "extractFdd",
+     "module": "src/lib/fdd-extraction-engine.ts",
+     "effects": [
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/questions",
+   "file": "src/app/api/fdd/questions/route.ts",
+   "method": "POST",
+   "line": 14,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/report/pdf",
+   "file": "src/app/api/fdd/report/pdf/route.ts",
+   "method": "GET",
+   "line": 7,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/report",
+   "file": "src/app/api/fdd/report/route.ts",
+   "method": "POST",
+   "line": 22,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "generateProfessionalReport",
+     "module": "src/lib/fdd-report-engine.ts",
+     "effects": [
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "deriveFddAnswerKeys",
+     "module": "src/lib/fdd-writeback.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "writeFddAnswerKeys",
+     "module": "src/lib/fdd-writeback.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/score",
+   "file": "src/app/api/fdd/score/route.ts",
+   "method": "POST",
+   "line": 16,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callFDDModel",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/territory",
+   "file": "src/app/api/fdd/territory/route.ts",
+   "method": "POST",
+   "line": 12,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "analyseTeritory",
+     "module": "src/lib/fdd-territory-engine.ts",
+     "effects": [
+      "net"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/upload",
+   "file": "src/app/api/fdd/upload/route.ts",
+   "method": "POST",
+   "line": 13,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "storage-write"
+   ],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "getUserEntitlements",
+     "module": "src/lib/entitlements.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "resolveFddAnalysisLimit",
+     "module": "src/lib/entitlements.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/fdd/writeback",
+   "file": "src/app/api/fdd/writeback/route.ts",
+   "method": "POST",
+   "line": 19,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "deriveFddAnswerKeys",
+     "module": "src/lib/fdd-writeback.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "writeFddAnswerKeys",
+     "module": "src/lib/fdd-writeback.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "buildFddWritebackPreview",
+     "module": "src/lib/fdd-writeback.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/followup/completion-summary",
+   "file": "src/app/api/followup/completion-summary/route.ts",
+   "method": "POST",
+   "line": 19,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/followup/generate-questions",
+   "file": "src/app/api/followup/generate-questions/route.ts",
+   "method": "POST",
+   "line": 53,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/followup/save-response",
+   "file": "src/app/api/followup/save-response/route.ts",
+   "method": "POST",
+   "line": 42,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/followup/save-voice-sample",
+   "file": "src/app/api/followup/save-voice-sample/route.ts",
+   "method": "POST",
+   "line": 86,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/franchise/brand-view",
+   "file": "src/app/api/franchise/brand-view/route.ts",
+   "method": "POST",
+   "line": 6,
+   "verdict": "validation-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": true,
+   "evidence": "src/app/api/franchise/brand-view/route.ts L11-13: missing brand_slug -> 400 before the service-role insert (L19). NOTE: getUser() at L16 is not a guard — the user is never required, so ANY anonymous caller with a slug writes a row (finding F-008)"
+  },
+  {
+   "route": "/api/franchise/broker-request",
+   "file": "src/app/api/franchise/broker-request/route.ts",
+   "method": "POST",
+   "line": 15,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/franchise/matches",
+   "file": "src/app/api/franchise/matches/route.ts",
+   "method": "GET",
+   "line": 6,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "matchFranchises",
+     "module": "src/lib/franchise-matcher.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/gap-analysis/enrich",
+   "file": "src/app/api/gap-analysis/enrich/route.ts",
+   "method": "POST",
+   "line": 19,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "llm",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/gap-analysis/run",
+   "file": "src/app/api/gap-analysis/run/route.ts",
+   "method": "POST",
+   "line": 34,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "runSemanticEval",
+     "module": "src/lib/gap-analysis-enrichment.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/gap-analysis/semantic-eval",
+   "file": "src/app/api/gap-analysis/semantic-eval/route.ts",
+   "method": "POST",
+   "line": 42,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/acknowledge",
+   "file": "src/app/api/generate/acknowledge/route.ts",
+   "method": "POST",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": true
+  },
+  {
+   "route": "/api/generate/case-brief/[applicationId]",
+   "file": "src/app/api/generate/case-brief/[applicationId]/route.ts",
+   "method": "GET",
+   "line": 16,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/confirm",
+   "file": "src/app/api/generate/confirm/route.ts",
+   "method": "POST",
+   "line": 13,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/documents/[applicationId]",
+   "file": "src/app/api/generate/documents/[applicationId]/route.ts",
+   "method": "GET",
+   "line": 17,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/documents/[applicationId]",
+   "file": "src/app/api/generate/documents/[applicationId]/route.ts",
+   "method": "POST",
+   "line": 90,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/documents/[applicationId]",
+   "file": "src/app/api/generate/documents/[applicationId]/route.ts",
+   "method": "PATCH",
+   "line": 144,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/download/[applicationId]",
+   "file": "src/app/api/generate/download/[applicationId]/route.ts",
+   "method": "GET",
+   "line": 74,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildPackageManifest",
+     "module": "src/lib/cic-package-manifest.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "buildExhibitRegistry",
+     "module": "src/lib/exhibit-registry.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "buildDocumentSafely",
+     "module": "src/lib/document-build-safety.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "alertDocumentBuildFailures",
+     "module": "src/lib/document-build-safety.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "buildFailureNoteText",
+     "module": "src/lib/document-build-safety.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/progress/[jobId]",
+   "file": "src/app/api/generate/progress/[jobId]/route.ts",
+   "method": "GET",
+   "line": 23,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "resolveProgressStatus",
+     "module": "src/lib/progress-stall.ts",
+     "effects": [
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "isTerminalJobStatus",
+     "module": "src/lib/progress-stall.ts",
+     "effects": [
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/revise/[applicationId]",
+   "file": "src/app/api/generate/revise/[applicationId]/route.ts",
+   "method": "POST",
+   "line": 20,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "buildGenerationPayload",
+     "module": "src/lib/generation-engine.ts",
+     "effects": [
+      "db",
+      "mail",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "mail",
+      "llm"
+     ]
+    },
+    {
+     "symbol": "callClaudeAPI",
+     "module": "src/lib/generation-engine.ts",
+     "effects": [
+      "db",
+      "mail",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "mail",
+      "llm"
+     ]
+    },
+    {
+     "symbol": "humanizeDocument",
+     "module": "src/lib/generation-engine.ts",
+     "effects": [
+      "db",
+      "mail",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "mail",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/run/[jobId]",
+   "file": "src/app/api/generate/run/[jobId]/route.ts",
+   "method": "POST",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "runGenerationPipeline",
+     "module": "src/lib/generation-engine.ts",
+     "effects": [
+      "db",
+      "mail",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "mail",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/start",
+   "file": "src/app/api/generate/start/route.ts",
+   "method": "POST",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/generate/validate/[applicationId]",
+   "file": "src/app/api/generate/validate/[applicationId]/route.ts",
+   "method": "GET",
+   "line": 14,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/health",
+   "file": "src/app/api/health/route.ts",
+   "method": "GET",
+   "line": 4,
+   "verdict": "no-guard",
+   "firstGuard": null,
+   "firstEffect": "db",
+   "enforced": null,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/market-analysis/pdf",
+   "file": "src/app/api/market-analysis/pdf/route.ts",
+   "method": "GET",
+   "line": 7,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "analyseTeritoryForBusiness",
+     "module": "src/lib/fdd-territory-engine.ts",
+     "effects": [
+      "net"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/market-analysis/pdf",
+   "file": "src/app/api/market-analysis/pdf/route.ts",
+   "method": "POST",
+   "line": 64,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "analyseTeritoryForBusiness",
+     "module": "src/lib/fdd-territory-engine.ts",
+     "effects": [
+      "net"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/market-analysis",
+   "file": "src/app/api/market-analysis/route.ts",
+   "method": "GET",
+   "line": 10,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/market-analysis",
+   "file": "src/app/api/market-analysis/route.ts",
+   "method": "POST",
+   "line": 97,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "getUserEntitlements",
+     "module": "src/lib/entitlements.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "resolveMarketAnalysisLimit",
+     "module": "src/lib/entitlements.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "analyseTeritoryForBusiness",
+     "module": "src/lib/fdd-territory-engine.ts",
+     "effects": [
+      "net"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/notifications/franchise-referral",
+   "file": "src/app/api/notifications/franchise-referral/route.ts",
+   "method": "POST",
+   "line": 21,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "mail",
+   "enforced": true,
+   "writes": [
+    "mail"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/nps/submit",
+   "file": "src/app/api/nps/submit/route.ts",
+   "method": "POST",
+   "line": 18,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/partner/accept",
+   "file": "src/app/api/partner/accept/route.ts",
+   "method": "POST",
+   "line": 5,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/partner/invite",
+   "file": "src/app/api/partner/invite/route.ts",
+   "method": "POST",
+   "line": 110,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/partner2/intake",
+   "file": "src/app/api/partner2/intake/route.ts",
+   "method": "GET",
+   "line": 77,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/partner2/intake",
+   "file": "src/app/api/partner2/intake/route.ts",
+   "method": "PATCH",
+   "line": 141,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/family-members/[id]",
+   "file": "src/app/api/profile/family-members/[id]/route.ts",
+   "method": "PATCH",
+   "line": 5,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/family-members/[id]",
+   "file": "src/app/api/profile/family-members/[id]/route.ts",
+   "method": "DELETE",
+   "line": 44,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/family-members",
+   "file": "src/app/api/profile/family-members/route.ts",
+   "method": "GET",
+   "line": 20,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/family-members",
+   "file": "src/app/api/profile/family-members/route.ts",
+   "method": "POST",
+   "line": 42,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "assignNextPersonCode",
+     "module": "src/lib/person-code.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/name",
+   "file": "src/app/api/profile/name/route.ts",
+   "method": "PATCH",
+   "line": 5,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/outcomes-consent",
+   "file": "src/app/api/profile/outcomes-consent/route.ts",
+   "method": "POST",
+   "line": 13,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/outcomes-consent",
+   "file": "src/app/api/profile/outcomes-consent/route.ts",
+   "method": "GET",
+   "line": 40,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/profile/rebuild",
+   "file": "src/app/api/profile/rebuild/route.ts",
+   "method": "POST",
+   "line": 6,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/promo/validate",
+   "file": "src/app/api/promo/validate/route.ts",
+   "method": "POST",
+   "line": 18,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "validatePromoCode",
+     "module": "src/lib/promo-codes.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/quiz/personalized-flags",
+   "file": "src/app/api/quiz/personalized-flags/route.ts",
+   "method": "POST",
+   "line": 25,
+   "verdict": "guard-first",
+   "firstGuard": "rate-limit",
+   "firstEffect": "net",
+   "enforced": false,
+   "writes": [
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/renewal/baseline",
+   "file": "src/app/api/renewal/baseline/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/renewal/generate",
+   "file": "src/app/api/renewal/generate/route.ts",
+   "method": "POST",
+   "line": 271,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/renewal/intake",
+   "file": "src/app/api/renewal/intake/route.ts",
+   "method": "GET",
+   "line": 6,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/renewal/intake",
+   "file": "src/app/api/renewal/intake/route.ts",
+   "method": "PATCH",
+   "line": 72,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/retention/confirm-hold",
+   "file": "src/app/api/retention/confirm-hold/route.ts",
+   "method": "POST",
+   "line": 15,
+   "verdict": "validation-first",
+   "firstGuard": null,
+   "firstEffect": "db",
+   "enforced": null,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "verifyRetentionHoldToken",
+     "module": "src/lib/emails/retention-hold-token.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false,
+   "evidence": "src/app/api/retention/confirm-hold/route.ts L22-32: missing/invalid token -> 400 before any query"
+  },
+  {
+   "route": "/api/simulator/case-gaps",
+   "file": "src/app/api/simulator/case-gaps/route.ts",
+   "method": "GET",
+   "line": 9,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "buildSimulatorContext",
+     "module": "src/lib/simulator-engine.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/case-gaps",
+   "file": "src/app/api/simulator/case-gaps/route.ts",
+   "method": "POST",
+   "line": 51,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/case-summary",
+   "file": "src/app/api/simulator/case-summary/route.ts",
+   "method": "GET",
+   "line": 37,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/coaching-report",
+   "file": "src/app/api/simulator/coaching-report/route.ts",
+   "method": "POST",
+   "line": 48,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "llm",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/evaluate",
+   "file": "src/app/api/simulator/evaluate/route.ts",
+   "method": "POST",
+   "line": 13,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/follow-up",
+   "file": "src/app/api/simulator/follow-up/route.ts",
+   "method": "POST",
+   "line": 15,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "llm",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/interview-prep",
+   "file": "src/app/api/simulator/interview-prep/route.ts",
+   "method": "GET",
+   "line": 194,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "llm",
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "scoreCase",
+     "module": "src/lib/gap-analysis-engine.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "callLLM",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/outcome",
+   "file": "src/app/api/simulator/outcome/route.ts",
+   "method": "POST",
+   "line": 7,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "buildCaseProfile",
+     "module": "src/lib/case-profile.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "buildCaseIntelligence",
+     "module": "src/lib/case-intelligence-core.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/outcome",
+   "file": "src/app/api/simulator/outcome/route.ts",
+   "method": "GET",
+   "line": 78,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/prep-kit/pdf",
+   "file": "src/app/api/simulator/prep-kit/pdf/route.ts",
+   "method": "GET",
+   "line": 6,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "rankApplications",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/prep-kit",
+   "file": "src/app/api/simulator/prep-kit/route.ts",
+   "method": "POST",
+   "line": 133,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write",
+    "llm"
+   ],
+   "imported": [
+    {
+     "symbol": "isKillSwitchEnabled",
+     "module": "src/lib/kill-switch.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "rankApplications",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "scoreCase",
+     "module": "src/lib/gap-analysis-engine.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "enrichCategory",
+     "module": "src/lib/gap-analysis-enrichment.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "runSemanticEval",
+     "module": "src/lib/gap-analysis-enrichment.ts",
+     "effects": [
+      "db",
+      "llm"
+     ],
+     "writes": [
+      "llm"
+     ]
+    },
+    {
+     "symbol": "callLLMWithMeta",
+     "module": "src/lib/llm-client.ts",
+     "effects": [
+      "db",
+      "llm",
+      "net"
+     ],
+     "writes": [
+      "db-write",
+      "llm"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/prep-kit",
+   "file": "src/app/api/simulator/prep-kit/route.ts",
+   "method": "GET",
+   "line": 889,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "rankApplications",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/quick-start",
+   "file": "src/app/api/simulator/quick-start/route.ts",
+   "method": "POST",
+   "line": 12,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/save-extraction",
+   "file": "src/app/api/simulator/save-extraction/route.ts",
+   "method": "POST",
+   "line": 8,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/section-nudge",
+   "file": "src/app/api/simulator/section-nudge/route.ts",
+   "method": "GET",
+   "line": 26,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [],
+   "imported": [
+    {
+     "symbol": "resolvePrimaryApplicationId",
+     "module": "src/lib/resolve-application.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/transcribe",
+   "file": "src/app/api/simulator/transcribe/route.ts",
+   "method": "POST",
+   "line": 49,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/tts",
+   "file": "src/app/api/simulator/tts/route.ts",
+   "method": "POST",
+   "line": 55,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/simulator/voice-status",
+   "file": "src/app/api/simulator/voice-status/route.ts",
+   "method": "GET",
+   "line": 6,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": null,
+   "enforced": true,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/stripe/checkout",
+   "file": "src/app/api/stripe/checkout/route.ts",
+   "method": "HEAD",
+   "line": 3,
+   "verdict": "no-effect",
+   "firstGuard": null,
+   "firstEffect": null,
+   "enforced": null,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/stripe/checkout",
+   "file": "src/app/api/stripe/checkout/route.ts",
+   "method": "GET",
+   "line": 13,
+   "verdict": "no-effect",
+   "firstGuard": null,
+   "firstEffect": null,
+   "enforced": null,
+   "writes": [],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/stripe/create-checkout",
+   "file": "src/app/api/stripe/create-checkout/route.ts",
+   "method": "POST",
+   "line": 86,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "isPackageTier",
+     "module": "src/lib/partnership-hold.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "resolvePartnershipHold",
+     "module": "src/lib/partnership-hold.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "getUserEntitlements",
+     "module": "src/lib/entitlements.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "hasLoyaltyEligibility",
+     "module": "src/lib/entitlements.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": []
+    },
+    {
+     "symbol": "validatePromoCode",
+     "module": "src/lib/promo-codes.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    },
+    {
+     "symbol": "reservePromoRedemption",
+     "module": "src/lib/promo-codes.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/stripe/grant-simulator-sessions",
+   "file": "src/app/api/stripe/grant-simulator-sessions/route.ts",
+   "method": "POST",
+   "line": 49,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/stripe/verify-payment",
+   "file": "src/app/api/stripe/verify-payment/route.ts",
+   "method": "POST",
+   "line": 32,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/stripe/webhook",
+   "file": "src/app/api/stripe/webhook/route.ts",
+   "method": "POST",
+   "line": 32,
+   "verdict": "guard-first",
+   "firstGuard": "webhook",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/support/submit",
+   "file": "src/app/api/support/submit/route.ts",
+   "method": "POST",
+   "line": 11,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": false,
+   "writes": [
+    "db-write",
+    "mail"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": true
+  },
+  {
+   "route": "/api/track/session",
+   "file": "src/app/api/track/session/route.ts",
+   "method": "POST",
+   "line": 10,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/api/uploaded-documents/[id]",
+   "file": "src/app/api/uploaded-documents/[id]/route.ts",
+   "method": "DELETE",
+   "line": 20,
+   "verdict": "guard-first",
+   "firstGuard": "auth",
+   "firstEffect": "db",
+   "enforced": true,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [
+    {
+     "symbol": "logDocumentAccess",
+     "module": "src/lib/document-access-log.ts",
+     "effects": [
+      "db"
+     ],
+     "writes": [
+      "db-write"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/auth/callback",
+   "file": "src/app/auth/callback/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "no-guard",
+   "firstGuard": null,
+   "firstEffect": "db",
+   "enforced": null,
+   "writes": [
+    "db-write"
+   ],
+   "imported": [],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  },
+  {
+   "route": "/dev/email-preview/[template]",
+   "file": "src/app/dev/email-preview/[template]/route.ts",
+   "method": "GET",
+   "line": 8,
+   "verdict": "no-guard",
+   "firstGuard": null,
+   "firstEffect": null,
+   "enforced": null,
+   "writes": [
+    "mail"
+   ],
+   "imported": [
+    {
+     "symbol": "buildPerspectiveEmail",
+     "module": "src/lib/emails/quiz-nurture.ts",
+     "effects": [
+      "mail"
+     ],
+     "writes": [
+      "mail"
+     ]
+    },
+    {
+     "symbol": "buildPackageReadyEmail",
+     "module": "src/lib/emails/generation-emails.ts",
+     "effects": [
+      "db",
+      "mail"
+     ],
+     "writes": [
+      "mail"
+     ]
+    }
+   ],
+   "importedBeforeGuard": false,
+   "bodyBeforeGuard": false
+  }
+ ]
+}

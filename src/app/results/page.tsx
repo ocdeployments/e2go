@@ -166,7 +166,7 @@ function EmailGate({ onBackToQuiz }: { onBackToQuiz: () => void }) {
 }
 
 /* ─── Name Capture ───────────────────────────────────────────────────────── */
-function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email: string; quizSessionId: string; onSuccess: () => void; onDismiss: () => void }) {
+function NameCaptureForm({ email, onSuccess, onDismiss }: { email: string; onSuccess: () => void; onDismiss: () => void }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -183,7 +183,7 @@ function NameCaptureForm({ email, quizSessionId, onSuccess, onDismiss }: { email
     if (newPassword !== confirmNewPassword) { setError("Passwords do not match."); return; }
     setCreating(true);
     try {
-      const result = await createAccountFromVerifiedEmail({ email, password: newPassword, firstName, lastName, quizSessionId });
+      const result = await createAccountFromVerifiedEmail({ password: newPassword, firstName, lastName });
       if (result.error) {
         if (result.error.includes("already") || result.error.includes("exists") || result.error.includes("registered")) setAccountExists(true);
         else setError(result.error);
@@ -434,16 +434,32 @@ function ResultsPageInner() {
       const sessionId = paramSession || cookieSession;
       if (!sessionId) { setVerificationState("unverified"); setLoading(false); return; }
       setQuizSessionId(sessionId);
+      // Anonymous callers have no SELECT policy on quiz_sessions, so this
+      // lookup routinely comes back empty — the /verify page already fetched
+      // email/full_name server-side (service role) and stashed them in
+      // localStorage as a fallback source of truth. See src/app/verify/page.tsx.
+      const storedIdentity = localStorage.getItem("e2go_quiz_identity");
+      let identity: { email?: string; full_name?: string | null } | null = null;
+      if (storedIdentity) { try { identity = JSON.parse(storedIdentity); } catch { /* ignore */ } }
+
       const { data: session } = await supabase.from("quiz_sessions").select("result_json, outcome, email, full_name").eq("id", sessionId).single();
       if (session?.result_json) {
         setData(session.result_json as ResultData);
-        setQuizEmail(session.email);
+        setQuizEmail(session.email || identity?.email || null);
         if (session.full_name) setUserName(session.full_name);
+        else if (identity?.full_name) setUserName(identity.full_name);
         setVerificationState("verified");
       }
       else {
         const stored = localStorage.getItem("e2go_quiz_result");
-        if (stored) { try { setData(JSON.parse(stored)); setVerificationState("verified"); } catch { setVerificationState("unverified"); } }
+        if (stored) {
+          try {
+            setData(JSON.parse(stored));
+            if (identity?.email) setQuizEmail(identity.email);
+            if (identity?.full_name) setUserName(identity.full_name);
+            setVerificationState("verified");
+          } catch { setVerificationState("unverified"); }
+        }
         else { setVerificationState("unverified"); }
       }
       setLoading(false);
@@ -729,7 +745,7 @@ function ResultsPageInner() {
         {/* Name capture */}
         {showNameCapture && quizSessionId && quizEmail && (
           <div style={{ paddingTop: "40px" }}>
-            <NameCaptureForm email={quizEmail} quizSessionId={quizSessionId} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
+            <NameCaptureForm email={quizEmail} onSuccess={() => window.location.reload()} onDismiss={() => setNameCaptureDismissed(true)} />
           </div>
         )}
         {verificationState === "verified" && !isLoggedIn && nameCaptureDismissed && (
@@ -1190,10 +1206,10 @@ function ResultsPageInner() {
                 )}
               </div>
 
-              {/* Unified what's included list — two explicit columns, no grid wrapping */}
-              <div style={{ flex: 1, minWidth: "240px", display: "flex", gap: "20px" }}>
+              {/* Unified what's included list — two explicit columns, stacks on narrow viewports */}
+              <div style={{ flex: 1, minWidth: "240px", display: "flex", flexWrap: "wrap" as const, gap: "20px" }}>
                 {/* Left column */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column" as const, gap: "6px" }}>
                   {([
                     { icon: "✓", color: "#5DCAA5", text: "Eligibility assessment", dim: true },
                     { icon: "✓", color: "#5DCAA5", text: flagsToShow.length > 0 ? `${flagsToShow.length} risk area${flagsToShow.length > 1 ? "s" : ""} identified` : "Clean profile", dim: true },
@@ -1208,7 +1224,7 @@ function ResultsPageInner() {
                   ))}
                 </div>
                 {/* Right column */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                <div style={{ flex: 1, minWidth: "200px", display: "flex", flexDirection: "column" as const, gap: "6px" }}>
                   {([
                     { icon: "→", color: "#C9A84C", text: "Gap Analysis — 6 categories", dim: false },
                     { icon: "→", color: "#C9A84C", text: "Page limits enforced", dim: false },

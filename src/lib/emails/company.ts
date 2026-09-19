@@ -20,7 +20,7 @@ export const COMPANY_DBA = 'E2go.app';
  * While this is empty the footer prints the entity name only, which is
  * sufficient for transactional mail but not for a commercial send.
  */
-export const COMPANY_POSTAL_ADDRESS = '';
+export const COMPANY_POSTAL_ADDRESS = '8100 Shasta Drive, McKinney, TX 75071';
 
 /** One-line company identity for an email footer. */
 export function companyFooterLine(): string {

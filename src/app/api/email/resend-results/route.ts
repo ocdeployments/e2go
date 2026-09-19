@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   const { data: session, error } = await supabase
     .from('quiz_sessions')
-    .select('id, email, outcome, result_json, franchise_interest')
+    .select('id, email, outcome, result_json, franchise_interest, full_name')
     .eq('email', email)
     .order('completed_at', { ascending: false })
     .limit(1)
@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
     result_json: (session.result_json ?? {}) as Record<string, unknown>,
     franchise_interest: session.franchise_interest ?? false,
     quiz_session_id: session.id,
+    full_name: session.full_name ?? null,
   });
 
   if (!sent) {

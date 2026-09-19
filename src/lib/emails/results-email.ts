@@ -63,8 +63,11 @@ export function buildResultsEmail(
   expiresAt?: Date,
   /** Recipient, so the footer's unsubscribe link is signed and works. */
   recipient?: string,
+  /** First name only, extracted from full_name if provided. */
+  fullName?: string,
 ): ResultsEmailContent {
   const isQualified = QUALIFIED_OUTCOMES.includes(outcome);
+  const firstName = fullName?.trim().split(/\s+/)[0] || '';
 
   /**
    * One subject for both variants, on purpose. The old qualified subject
@@ -82,7 +85,9 @@ export function buildResultsEmail(
    * Deliberately does not describe their life or their country back to them —
    * we do not know it. It points at the reason they already have.
    */
-  const heading = 'You did not fill that in for no reason.';
+  const heading = firstName
+    ? `Hi ${firstName} — you did not fill that in for no reason.`
+    : 'You did not fill that in for no reason.';
 
   const openingLine = isQualified
     ? 'An hour ago this was something you were thinking about. It is now something with an answer attached to it.'
@@ -97,8 +102,8 @@ export function buildResultsEmail(
     : 'Most people told "not yet" are being told about something they can change. It is better to know which one you are looking at now than after you have spent money finding out.';
 
   const expiryCopy = expiresAt
-    ? `Your link opens once, and it stops working on ${formatExpiry(expiresAt)}. If you miss it, request a new one from the results page — it takes a few seconds.`
-    : 'Your link opens once, and it stops working 24 hours after this email was sent. If you miss it, request a new one from the results page — it takes a few seconds.';
+    ? `Your link stays valid until ${formatExpiry(expiresAt)}. If you miss it, request a new one from the results page — it takes a few seconds.`
+    : 'Your link stays valid for 24 hours after this email was sent. If you miss it, request a new one from the results page — it takes a few seconds.';
 
   const content = `
 <h1 style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 300; color: #f5f0e8; margin: 0 0 20px 0; line-height: 1.25;">
@@ -173,6 +178,7 @@ export interface SendResultsEmailArgs {
   result_json: Record<string, unknown>;
   franchise_interest: boolean;
   quiz_session_id: string | null;
+  full_name?: string | null;
 }
 
 /**
@@ -181,7 +187,7 @@ export interface SendResultsEmailArgs {
  * decides whether that is worth surfacing.
  */
 export async function sendResultsEmail(args: SendResultsEmailArgs): Promise<boolean> {
-  const { supabase, email, outcome, result_json, franchise_interest, quiz_session_id } = args;
+  const { supabase, email, outcome, result_json, franchise_interest, quiz_session_id, full_name } = args;
 
   const token = crypto.randomBytes(32).toString('hex');
 
@@ -216,6 +222,7 @@ export async function sendResultsEmail(args: SendResultsEmailArgs): Promise<bool
     `${appUrl}/verify?token=${token}`,
     expiresAt,
     email,
+    full_name || undefined,
   );
 
   if (!process.env.RESEND_API_KEY) {

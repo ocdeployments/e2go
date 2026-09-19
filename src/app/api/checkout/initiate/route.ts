@@ -163,9 +163,9 @@ export async function POST(request: NextRequest) {
   let session: Stripe.Checkout.Session;
   try {
     session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'payment',
+      managed_payments: { enabled: false },
       success_url: `${appUrl}/onboarding?payment=success`,
       cancel_url: `${appUrl}/results`,
       ...(customerEmail ? { customer_email: customerEmail } : {}),

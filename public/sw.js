@@ -1,5 +1,4 @@
 const CACHE_NAME = 'e2go-v2';
-const OFFLINE_URL = '/';
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
@@ -50,6 +49,12 @@ self.addEventListener('fetch', (event) => {
 
   // Skip Next.js internal chunks — they are versioned and must never be served stale
   if (url.pathname.startsWith('/_next/')) {
+    return;
+  }
+
+  // Self-hosted brand fonts are requested in CORS mode from CSS and preload links;
+  // the browser's own HTTP cache already handles them, so don't proxy them.
+  if (url.pathname.startsWith('/fonts/')) {
     return;
   }
 

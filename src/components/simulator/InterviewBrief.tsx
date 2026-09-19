@@ -344,7 +344,7 @@ export default function InterviewBrief({ applicationId, businessName }: Intervie
 
     const load = async () => {
       try {
-        const res = await fetch(`/api/simulator/interview-prep?applicationId=${applicationId}`);
+        const res = await fetch(`/api/simulator/interview-prep?applicationId=${encodeURIComponent(applicationId)}`, { method: 'POST' });
         if (!res.ok) throw new Error('Failed');
         const data: InterviewBriefData = await res.json();
         sessionStorage.setItem(cacheKey, JSON.stringify(data));

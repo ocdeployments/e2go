@@ -295,9 +295,9 @@ export async function POST(request: NextRequest) {
     let session: Stripe.Checkout.Session;
     try {
       session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'payment',
+        managed_payments: { enabled: false },
         success_url: successUrl.includes('{CHECKOUT_SESSION_ID}')
           ? successUrl
           : `${successUrl}${successUrl.includes('?') ? '&' : '?'}session_id={CHECKOUT_SESSION_ID}`,
