@@ -268,7 +268,6 @@ function isExistingGatedPath(pathname: string): boolean {
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/api/auth/login' ||
-    pathname === '/api/quiz/submit' ||
     pathname === '/api/email/results' ||
     pathname.startsWith('/api/generate/') ||
     pathname.startsWith('/api/analysis/')
@@ -301,8 +300,8 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Rate limit quiz submission
-  if (pathname === '/api/quiz/submit' || pathname === '/api/email/results') {
+  // Rate limit results e-mail requests
+  if (pathname === '/api/email/results') {
     const allowed = await enforceLimit({ limiter: quizLimiter, ip, name: 'quiz', limit: 3, windowMs: 60 * 60 * 1000 });
     if (!allowed) {
       await logRateLimitHit('quiz', pathname, ip);
@@ -627,7 +626,6 @@ export const config = {
     '/login',
     '/signup',
     // Rate-limited API routes
-    '/api/quiz/submit',
     '/api/email/results',
     '/api/generate/:path*',
     '/api/analysis/:path*',
