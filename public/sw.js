@@ -53,6 +53,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Self-hosted brand fonts are requested in CORS mode from CSS and preload links;
+  // the browser's own HTTP cache already handles them, so don't proxy them.
+  if (url.pathname.startsWith('/fonts/')) {
+    return;
+  }
+
   // Cache API only accepts http/https requests — extensions (chrome-extension://,
   // moz-extension://, etc.) can trigger fetch events in the page context that
   // would otherwise throw on cache.put().
