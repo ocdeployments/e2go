@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { sendResultsEmail } from '@/lib/emails/results-email';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { quiz_session_id } = body;
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+  const quiz_session_id = typeof body.quiz_session_id === 'string' ? body.quiz_session_id : null;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,12 +31,24 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabaseAuth.auth.getUser();
 
   if (user) {
-    // Authenticated — trust the request body
-    email = body.email;
-    outcome = body.outcome;
-    result_json = body.result_json;
-    franchise_interest = body.franchise_interest ?? false;
-    full_name = body.full_name ?? null;
+    // Authenticated — the result payload comes from the body, but the
+    // recipient is always the signed-in user's own address. Never the body's:
+    // otherwise any account could send E2go.app mail to an arbitrary inbox.
+    if (!user.email) {
+      return NextResponse.json({ error: 'Account has no email address' }, { status: 400 });
+    }
+    const userLimit = await checkRateLimit(`user:${user.id}`, 'resend-results');
+    if (!userLimit.allowed) {
+      return NextResponse.json(
+        { error: 'rate_limited', message: 'Too many requests. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(userLimit.reset) } }
+      );
+    }
+    email = user.email;
+    outcome = String(body.outcome ?? '');
+    result_json = (body.result_json ?? {}) as Record<string, unknown>;
+    franchise_interest = body.franchise_interest === true;
+    full_name = typeof body.full_name === 'string' ? body.full_name : null;
   } else {
     // ── Path B: anonymous quiz-completion flow ──
     // Validate quiz_session_id: must be valid UUID, exist in DB, and be fresh
