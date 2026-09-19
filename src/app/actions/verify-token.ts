@@ -1,5 +1,8 @@
 'use server'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+import { VERIFIED_TOKEN_COOKIE, VERIFIED_TOKEN_MAX_AGE_SECONDS } from '@/lib/verified-token-cookie'
+
 
 export async function verifyToken(token: string) {
   const supabase = createClient(
@@ -24,6 +27,14 @@ export async function verifyToken(token: string) {
     .from('email_verifications')
     .update({ verified_at: new Date().toISOString() })
     .eq('token', token)
+
+  cookies().set(VERIFIED_TOKEN_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: VERIFIED_TOKEN_MAX_AGE_SECONDS,
+  })
 
   // email_verifications has no full_name column; quiz_sessions does. Fetch it
   // here with the service role since anonymous clients have no SELECT policy
