@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
-    const context = await buildSimulatorContext(applicationId);
+    const context = await buildSimulatorContext(applicationId, supabase);
     const fields = buildGapFields(context);
 
     return NextResponse.json({
