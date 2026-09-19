@@ -261,6 +261,10 @@ function isExistingGatedPath(pathname: string): boolean {
     pathname === '/market-analysis' || pathname.startsWith('/market-analysis/') ||
     pathname === '/api/market-analysis' ||
     pathname === '/simulator' || pathname.startsWith('/simulator/') ||
+    // AUTH_ROUTES below lists these; without them here the early return
+    // above skips the auth guard entirely and anon gets the page shell.
+    pathname.startsWith('/franchise/') ||
+    pathname === '/renewal' || pathname.startsWith('/renewal/') ||
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/api/auth/login' ||
